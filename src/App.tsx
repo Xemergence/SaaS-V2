@@ -1,15 +1,14 @@
 import { Suspense, lazy, useEffect, useState } from "react";
-import { Routes, Route, useRoutes } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
-// Lazy load components with Vite-compatible chunk names
+// Lazy load pages
 const LandingPage = lazy(() => import("./components/landing/LandingPage"));
 const Login = lazy(() => import("./components/auth/Login"));
 const SignUp = lazy(() => import("./components/auth/SignUp"));
 const Products = lazy(() => import("./components/Products"));
 const CustomPrint = lazy(() => import("./components/CustomPrint"));
-const DashboardLayout = lazy(
-  () => import("./components/dashboard/DashboardLayout"),
-);
+const DashboardLayout = lazy(() => import("./components/dashboard/DashboardLayout"));
 const Dashboard = lazy(() => import("./components/dashboard/Dashboard"));
 const Financial = lazy(() => import("./components/dashboard/Financial"));
 const CalendarView = lazy(() => import("./components/dashboard/CalendarView"));
@@ -19,94 +18,24 @@ const AIChat = lazy(() => import("./components/dashboard/AIChat"));
 const Sensors = lazy(() => import("./components/dashboard/Sensors"));
 const SocialMedia = lazy(() => import("./components/dashboard/SocialMedia"));
 const Settings = lazy(() => import("./components/dashboard/Settings"));
-const ProtectedRoute = lazy(() => import("./components/auth/ProtectedRoute"));
 
 function App() {
-  // Tempo-related state and logic only in development
-  let tempoRoutes: any = null;
-  let tempoRoutesLoaded = true;
-  let isTempoEnabled = false;
+  // Dev-only Tempo routes loader (safe-guarded)
   let TempoRoutes: any = () => null;
-
   if (import.meta.env.DEV) {
-    const [tempoRoutesState, setTempoRoutes] = useState<any>(null);
-    const [tempoRoutesLoadedState, setTempoRoutesLoaded] = useState(false);
-    const [isTempoEnabledState, setIsTempoEnabled] = useState(false);
-
-    tempoRoutes = tempoRoutesState;
-    tempoRoutesLoaded = tempoRoutesLoadedState;
-    isTempoEnabled = isTempoEnabledState;
-
-    // Detect if Tempo is enabled and load routes defensively
+    const [Comp, setComp] = useState<React.FC>(() => () => null);
     useEffect(() => {
       const tempoEnabled =
-        import.meta.env.VITE_TEMPO === "true" ||
-        import.meta.env.TEMPO === "true";
-
-      setIsTempoEnabled(tempoEnabled);
-
-      if (tempoEnabled) {
-        // Defensive loader for tempo-routes with try/catch
-            import("tempo-routes")
-      .then((routesModule: any) => {
-        let R: any = null;
-        if (routesModule?.default && typeof routesModule.default === "function") {
-          R = routesModule.default;
-        } else if (routesModule?.routes) {
-          R = routesModule.routes;
-        }
-        setTempoRoutes(() => (R ? R : () => null));
-        setTempoRoutesLoaded(true);
-      })
-      .catch(() => {
-        setTempoRoutes(() => () => null);
-        setTempoRoutesLoaded(true);
-      });
-    }
-}
-}
-            if (routes) {
-              setTempoRoutes(routes);
-              console.log(
-                "Tempo routes loaded successfully",
-                typeof routes === "function"
-                  ? "(component)"
-                  : `(${Array.isArray(routes) ? routes.length : "unknown"} routes)`,
-              );
-            } else {
-              console.warn("No valid routes found in tempo-routes module");
-              setTempoRoutes([]);
-            }
-          })
-          .catch((error) => {
-            console.warn(
-              "Failed to load tempo routes:",
-              error.message || error,
-            );
-            // Set empty routes to prevent infinite loading
-            setTempoRoutes([]);
-          })
-          .finally(() => {
-            setTempoRoutesLoaded(true);
-          });
-      } else {
-        setTempoRoutesLoaded(true);
-      }
+        import.meta.env.VITE_TEMPO === "true" || import.meta.env.TEMPO === "true";
+      if (!tempoEnabled) return;
+      import("tempo-routes")
+        .then((mod: any) => {
+          const R = typeof mod?.default === "function" ? mod.default : mod?.routes;
+          setComp(() => (R ? R : () => null));
+        })
+        .catch(() => setComp(() => () => null));
     }, []);
-
-    // Render tempo routes only after successful load
-    TempoRoutes = () => {
-      if (isTempoEnabled && tempoRoutes && tempoRoutesLoaded) {
-        // Handle both component and route array exports
-        if (typeof tempoRoutes === "function") {
-          const TempoComponent = tempoRoutes;
-          return <TempoComponent />;
-        } else if (Array.isArray(tempoRoutes)) {
-          return useRoutes(tempoRoutes);
-        }
-      }
-      return null;
-    };
+    TempoRoutes = Comp;
   }
 
   return (
@@ -118,7 +47,6 @@ function App() {
           </div>
         }
       >
-        {/* Tempo routes - only render after successful load */}
         {import.meta.env.DEV && <TempoRoutes />}
 
         <Routes>

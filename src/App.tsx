@@ -26,7 +26,7 @@ function App() {
   let tempoRoutes: any = null;
   let tempoRoutesLoaded = true;
   let isTempoEnabled = false;
-  let TempoRoutes = () => null;
+  let TempoRoutes: any = () => null;
 
   if (import.meta.env.DEV) {
     const [tempoRoutesState, setTempoRoutes] = useState<any>(null);
@@ -47,36 +47,24 @@ function App() {
 
       if (tempoEnabled) {
         // Defensive loader for tempo-routes with try/catch
-        import("tempo-routes")
-          .then((routesModule) => {
-            console.log(
-              "Tempo routes module loaded:",
-              Object.keys(routesModule),
-            );
-
-            // Support both component export and route array export
-            let routes = null;
-
-            if (routesModule.default) {
-              routes = routesModule.default;
-            } else if (routesModule.routes) {
-              routes = routesModule.routes;
-            } else if (Array.isArray(routesModule)) {
-              routes = routesModule;
-            } else {
-              // Try to find any array or component in the module
-              const moduleKeys = Object.keys(routesModule);
-              for (const key of moduleKeys) {
-                if (
-                  Array.isArray(routesModule[key]) ||
-                  typeof routesModule[key] === "function"
-                ) {
-                  routes = routesModule[key];
-                  break;
-                }
-              }
-            }
-
+            import("tempo-routes")
+      .then((routesModule: any) => {
+        let R: any = null;
+        if (routesModule?.default && typeof routesModule.default === "function") {
+          R = routesModule.default;
+        } else if (routesModule?.routes) {
+          R = routesModule.routes;
+        }
+        setTempoRoutes(() => (R ? R : () => null));
+        setTempoRoutesLoaded(true);
+      })
+      .catch(() => {
+        setTempoRoutes(() => () => null);
+        setTempoRoutesLoaded(true);
+      });
+    }
+}
+}
             if (routes) {
               setTempoRoutes(routes);
               console.log(

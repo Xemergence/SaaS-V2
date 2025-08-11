@@ -10,44 +10,19 @@ if (import.meta.env.DEV) {
     import.meta.env.VITE_TEMPO === "true" ||
     import.meta.env.TEMPO === "true"
   ) {
-    console.log("Initializing Tempo Devtools");
-    import("tempo-devtools")
-      .then((tempoModule) => {
-        // Handle various export shapes: {TempoDevtools}, {Tempo}, default function
-        let initFunction = null;
-
-        if (
-          tempoModule.TempoDevtools &&
-          typeof tempoModule.TempoDevtools.init === "function"
-        ) {
-          initFunction = tempoModule.TempoDevtools.init;
-        } else if (
-          tempoModule.Tempo &&
-          typeof tempoModule.Tempo.init === "function"
-        ) {
-          initFunction = tempoModule.Tempo.init;
-        } else if (typeof tempoModule.default === "function") {
-          initFunction = tempoModule.default;
-        } else if (typeof tempoModule.init === "function") {
-          initFunction = tempoModule.init;
-        }
-
-        if (initFunction) {
-          initFunction();
-          console.log("Tempo Devtools initialized successfully");
-        } else {
-          console.warn(
-            "No valid Tempo initialization function found in module:",
-            Object.keys(tempoModule),
-          );
+        import("tempo-devtools")
+      .then((tempoModule: any) => {
+        try {
+          if (typeof tempoModule?.TempoDevtools?.init === "function") {
+            tempoModule.TempoDevtools.init();
+          } else if (typeof tempoModule?.init === "function") {
+            tempoModule.init();
+          }
+        } catch (e) {
+          console.warn("Tempo devtools init skipped:", e);
         }
       })
-      .catch((error) => {
-        console.warn(
-          "Failed to initialize Tempo Devtools:",
-          error.message || error,
-        );
-      });
+      .catch(() => {});
   }
 }
 
